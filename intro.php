@@ -69,7 +69,7 @@ session_start();
 <body>
 <nav class="navbar navbar-expand-lg bg-light">
   <div class="container-fluid">
-    <a class="navbar-brand d-flex align-items-center" href="/">
+    <a class="navbar-brand d-flex align-items-center" href="index.php">
       <img src="/uploads/assests/book.png" alt="Library Logo" class="logo-image">
       <span class="navbar-title">BookBridge</span>
     </a>
@@ -80,7 +80,7 @@ session_start();
       <ul class="navbar-nav ms-auto me-5">
         <li class="nav-item"><a class="nav-link" href="gallery.php"><b>Gallery</b></a></li>
         <li class="nav-item"><a class="nav-link" href="about.php"><b>About</b></a></li>
-        <li class="nav-item"><a class="nav-link" href="/"><b>Login</b></a></li>
+        <li class="nav-item"><a class="nav-link" href="index.php"><b>Login</b></a></li>
       </ul>
     </div>
   </div>

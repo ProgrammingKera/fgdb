@@ -31,7 +31,7 @@ if (isset($_POST['weed_off_book'])) {
                 throw new Exception("Cannot remove this book. It is currently issued to users.");
             }
 
-            // Get book details before deletion
+            // Get book details before deletion (using book_name from books table)
             $stmt = $conn->prepare("SELECT book_name, author FROM books WHERE id = ?");
             $stmt->bind_param("i", $bookId);
             $stmt->execute();
@@ -41,8 +41,8 @@ if (isset($_POST['weed_off_book'])) {
                 throw new Exception("Book not found.");
             }
 
-            // Insert into weed-off history
-            $stmt = $conn->prepare("INSERT INTO weed_off_history (book_id, book_book_name, reason, removed_by) VALUES (?, ?, ?, ?)");
+            // Insert into weed-off history (using book_title as column name)
+            $stmt = $conn->prepare("INSERT INTO weed_off_history (book_id, book_title, reason, removed_by) VALUES (?, ?, ?, ?)");
             $stmt->bind_param("issi", $bookId, $book['book_name'], $reason, $_SESSION['user_id']);
             $stmt->execute();
 
@@ -66,7 +66,7 @@ if (isset($_POST['weed_off_book'])) {
 $conn->query("CREATE TABLE IF NOT EXISTS weed_off_history (
     id INT AUTO_INCREMENT PRIMARY KEY, 
     book_id INT, 
-    book_book_name VARCHAR(255), 
+    book_title VARCHAR(255), 
     reason TEXT, 
     removed_by INT, 
     removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
@@ -126,12 +126,12 @@ if ($result) {
                         <?php foreach ($books as $book): ?>
                             <div class="dropdown-item" 
                                  data-id="<?php echo $book['id']; ?>"
-                                 data-book_name="<?php echo htmlspecialchars($book['book_name']); ?>"
+                                 data-book_title="<?php echo htmlspecialchars($book['book_name']); ?>"
                                  data-author="<?php echo htmlspecialchars($book['author']); ?>"
                                  data-category="<?php echo htmlspecialchars($book['category']); ?>"
                                  data-book-no="<?php echo htmlspecialchars($book['book_no']); ?>">
                                 <div class="book-info">
-                                    <div class="book-book_name"><?php echo htmlspecialchars($book['book_name']); ?></div>
+                                    <div class="book-name"><?php echo htmlspecialchars($book['book_name']); ?></div>
                                     <div class="book-details">
                                         by <?php echo htmlspecialchars($book['author']); ?>
                                         <?php if (!empty($book['book_no'])): ?>
@@ -158,7 +158,7 @@ if ($result) {
                             <i class="fas fa-book"></i>
                         </div>
                         <div class="book-details-selected">
-                            <div class="book_name" id="selectedbook_name"></div>
+                            <div class="book-title" id="selectedBookTitle"></div>
                             <div class="author" id="selectedAuthor"></div>
                             <div class="meta" id="selectedMeta"></div>
                         </div>
@@ -199,7 +199,7 @@ if ($result) {
                 <table class="history-table">
                     <thead>
                         <tr>
-                            <th>Book Name</th>
+                            <th>Book Title</th>
                             <th>Reason</th>
                             <th>Removed By</th>
                             <th>Removed On</th>
@@ -208,7 +208,7 @@ if ($result) {
                     <tbody>
                         <?php foreach ($history as $record): ?>
                             <tr>
-                                <td class="book-book_name-cell"><?php echo htmlspecialchars($record['book_book_name']); ?></td>
+                                <td class="book-title-cell"><?php echo htmlspecialchars($record['book_title']); ?></td>
                                 <td class="reason-cell"><?php echo htmlspecialchars($record['reason']); ?></td>
                                 <td><?php echo htmlspecialchars($record['librarian_name']); ?></td>
                                 <td><?php echo date('M d, Y H:i', strtotime($record['removed_at'])); ?></td>
@@ -323,7 +323,7 @@ if ($result) {
     color: var(--white);
 }
 
-.book-info .book-book_name {
+.book-info .book-name {
     font-weight: 600;
     color: var(--text-color);
     margin-bottom: 5px;
@@ -334,7 +334,7 @@ if ($result) {
     color: var(--text-light);
 }
 
-.dropdown-item.selected .book-info .book-book_name,
+.dropdown-item.selected .book-info .book-name,
 .dropdown-item.selected .book-info .book-details {
     color: var(--white);
 }
@@ -375,7 +375,7 @@ if ($result) {
     font-size: 1.5em;
 }
 
-.book-details-selected .book_name {
+.book-details-selected .book-title {
     font-size: 1.1em;
     font-weight: 700;
     color: var(--primary-color);
@@ -508,7 +508,7 @@ if ($result) {
     background: var(--gray-100);
 }
 
-.book-book_name-cell {
+.book-title-cell {
     font-weight: 600;
     color: var(--primary-color);
 }
@@ -682,12 +682,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function filterBooks(searchTerm) {
         dropdownItems.forEach(item => {
-            const book_name = item.dataset.book_name.toLowerCase();
+            const bookTitle = item.dataset.book_title.toLowerCase();
             const author = item.dataset.author.toLowerCase();
             const bookNo = item.dataset.bookNo.toLowerCase();
             const category = item.dataset.category.toLowerCase();
             
-            if (book_name.includes(searchTerm) || 
+            if (bookTitle.includes(searchTerm) || 
                 author.includes(searchTerm) || 
                 bookNo.includes(searchTerm) || 
                 category.includes(searchTerm)) {
@@ -701,21 +701,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function selectBook(item) {
         selectedBook = {
             id: item.dataset.id,
-            book_name: item.dataset.book_name,
+            book_title: item.dataset.book_title,
             author: item.dataset.author,
             category: item.dataset.category,
             bookNo: item.dataset.bookNo
         };
 
         // Update search input
-        searchInput.value = selectedBook.book_name;
+        searchInput.value = selectedBook.book_title;
         selectedBookId.value = selectedBook.id;
 
         // Hide dropdown
         dropdown.classList.remove('show');
 
         // Show selected book display
-        document.getElementById('selectedbook_name').textContent = selectedBook.book_name;
+        document.getElementById('selectedBookTitle').textContent = selectedBook.book_title;
         document.getElementById('selectedAuthor').textContent = 'by ' + selectedBook.author;
         
         let metaText = '';
@@ -750,7 +750,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const confirmMessage = `Are you sure you want to permanently remove "${selectedBook.book_name}" from the library?\n\nThis action cannot be undone.`;
+        const confirmMessage = `Are you sure you want to permanently remove "${selectedBook.book_title}" from the library?\n\nThis action cannot be undone.`;
         if (!confirm(confirmMessage)) {
             e.preventDefault();
         }

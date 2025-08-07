@@ -247,20 +247,32 @@ while ($row = $result->fetch_assoc()) {
                             ?>
                         </td>
                         <td>
-                            <?php 
-                            if ($book['fine_amount'] > 0) {
-                                echo 'PKR ' . number_format($book['fine_amount'], 2);
-                            } else {
-                                // Calculate potential fine for overdue but not yet returned
-                                if ($book['current_status'] == 'overdue' && !$book['actual_return_date']) {
-                                    $suggestedFine = $book['days_overdue'] * 100.00; // PKR 100 per day overdue
-                                    echo '<span class="text-danger">PKR ' . number_format($suggestedFine, 2) . ' (pending)</span>';
-                                } else {
-                                    echo '-';
-                                }
-                            }
-                            ?>
-                        </td>
+    <?php 
+    // Get user role for this row
+    $roleStmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
+    $roleStmt->bind_param("i", $book['user_id']);
+    $roleStmt->execute();
+    $roleResult = $roleStmt->get_result();
+    $userRole = '';
+    if ($roleData = $roleResult->fetch_assoc()) {
+        $userRole = $roleData['role'];
+    }
+
+    // Faculty ke liye overdue par kuch bhi na dikhayein
+    if ($userRole === 'faculty' && $book['current_status'] == 'overdue' && !$book['actual_return_date']) {
+        // Show nothing
+    }
+    // Non-faculty ke liye fine/pending fine dikhayein
+    else if ($book['fine_amount'] > 0) {
+        echo 'PKR ' . number_format($book['fine_amount'], 2);
+    } else if ($book['current_status'] == 'overdue' && !$book['actual_return_date']) {
+        $suggestedFine = $book['days_overdue'] * 100.00;
+        echo '<span class="text-danger">PKR ' . number_format($suggestedFine, 2) . ' (pending)</span>';
+    } else {
+        echo '-';
+    }
+    ?>
+</td>
                         <td>
                             <?php if ($book['current_status'] != 'returned'): ?>
                                 <button class="btn btn-sm btn-primary" data-modal-target="returnModal<?php echo $book['id']; ?>">
@@ -282,13 +294,24 @@ while ($row = $result->fetch_assoc()) {
                                             // Calculate days overdue and suggested fine
                                             $suggestedFine = 0;
                                             $daysOverdue = 0;
+                                            $userRole = '';
                                             $today = new DateTime();
                                             $dueDate = new DateTime($book['return_date']);
+                                            
+                                            // Get user role to determine fine exemption
+                                            $roleStmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
+                                            $roleStmt->bind_param("i", $book['user_id']);
+                                            $roleStmt->execute();
+                                            $roleResult = $roleStmt->get_result();
+                                            if ($roleData = $roleResult->fetch_assoc()) {
+                                                $userRole = $roleData['role'];
+                                            }
                                             
                                             if ($today > $dueDate) {
                                                 $diff = $today->diff($dueDate);
                                                 $daysOverdue = $diff->days;
-                                                $suggestedFine = $daysOverdue * 100.00; // PKR 100 per day overdue
+                                                // Faculty members are exempt from fines
+                                                $suggestedFine = ($userRole === 'faculty') ? 0 : ($daysOverdue * 100.00);
                                             }
                                             
                                             // Check for reservations
@@ -310,21 +333,24 @@ while ($row = $result->fetch_assoc()) {
                                             <form action="" method="POST">
                                                 <input type="hidden" name="issued_book_id" value="<?php echo $book['id']; ?>">
                                                 
-                                                <div class="form-group">
-                                                    <label for="return_date<?php echo $book['id']; ?>">Return Date</label>
-                                                    <input type="date" id="return_date<?php echo $book['id']; ?>" class="form-control" value="<?php echo date('Y-m-d'); ?>" readonly>
-                                                </div>
-                                                
                                                 <?php if ($daysOverdue > 0): ?>
-                                                    <div class="alert alert-warning">
-                                                        This book is <strong><?php echo $daysOverdue; ?> days</strong> overdue.
-                                                        Suggested fine: PKR <?php echo number_format($suggestedFine, 2); ?>
-                                                    </div>
-                                                    
-                                                    <div class="form-group">
-                                                        <label for="fine_amount<?php echo $book['id']; ?>">Fine Amount (PKR)</label>
-                                                        <input type="number" id="fine_amount<?php echo $book['id']; ?>" name="fine_amount" class="form-control" step="0.01" min="0" value="<?php echo $suggestedFine; ?>">
-                                                    </div>
+                                                    <?php if ($userRole === 'faculty'): ?>
+                                                        <div class="alert alert-info">
+                                                            This book is <strong><?php echo $daysOverdue; ?> days</strong> overdue.
+                                                            <br><strong>Faculty Exemption:</strong> No fine will be charged as this user is a faculty member.
+                                                        </div>
+                                                        <input type="hidden" name="fine_amount" value="0">
+                                                    <?php else: ?>
+                                                        <div class="alert alert-warning">
+                                                            This book is <strong><?php echo $daysOverdue; ?> days</strong> overdue.
+                                                            Suggested fine: PKR <?php echo number_format($suggestedFine, 2); ?>
+                                                        </div>
+                                                        
+                                                        <div class="form-group">
+                                                            <label for="fine_amount<?php echo $book['id']; ?>">Fine Amount (PKR)</label>
+                                                            <input type="number" id="fine_amount<?php echo $book['id']; ?>" name="fine_amount" class="form-control" step="0.01" min="0" value="<?php echo $suggestedFine; ?>">
+                                                        </div>
+                                                    <?php endif; ?>
                                                 <?php else: ?>
                                                     <div class="alert alert-success">
                                                         This book is being returned on time. No fine required.

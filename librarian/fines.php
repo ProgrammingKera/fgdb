@@ -112,13 +112,13 @@ $status = isset($_GET['status']) ? trim($_GET['status']) : '';
 
 // Build the query
 $sql = "
-    SELECT f.*, u.name as user_name, b.book_name as book_name, ib.issue_date, ib.return_date, ib.actual_return_date,
+    SELECT f.*, u.name as user_name, u.role as user_role, b.book_name as book_name, ib.issue_date, ib.return_date, ib.actual_return_date,
            DATEDIFF(COALESCE(ib.actual_return_date, CURRENT_DATE), ib.return_date) as days_overdue
     FROM fines f
     JOIN issued_books ib ON f.issued_book_id = ib.id
     JOIN books b ON ib.book_id = b.id
     JOIN users u ON f.user_id = u.id
-    WHERE 1=1
+    WHERE 1=1 AND u.role != 'faculty'
 ";
 $params = [];
 $types = "";

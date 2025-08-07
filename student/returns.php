@@ -18,9 +18,11 @@ $sql = "
                WHEN ib.actual_return_date IS NULL THEN 'issued'
                ELSE ib.status
            END as current_status,
-           f.amount as fine_amount, f.status as fine_status
+           f.amount as fine_amount, f.status as fine_status,
+           u.role as user_role
     FROM issued_books ib
     JOIN books b ON ib.book_id = b.id
+    JOIN users u ON ib.user_id = u.id
     LEFT JOIN fines f ON ib.id = f.issued_book_id
     WHERE ib.user_id = ?
     ORDER BY 
@@ -150,10 +152,12 @@ $overdueBooks = array_filter($currentBooks, function($book) {
                                 </td>
                                 <td>
                                     <?php 
-                                    if ($book['fine_amount'] > 0) {
+                                    if ($book['fine_amount'] > 0 && $book['user_role'] !== 'faculty') {
                                         $fineClass = ($book['fine_status'] == 'pending') ? 'text-danger' : 'text-success';
                                         echo '<span class="' . $fineClass . '">PKR ' . number_format($book['fine_amount'], 2) . '</span><br>';
                                         echo '<small class="text-muted">(' . ucfirst($book['fine_status']) . ')</small>';
+                                    } elseif ($book['user_role'] === 'faculty') {
+                                        echo '<span class="text-muted">Faculty Exempt</span>';
                                     } else {
                                         echo '<span class="text-muted">No fine</span>';
                                     }
@@ -228,10 +232,12 @@ $overdueBooks = array_filter($currentBooks, function($book) {
                                 </td>
                                 <td>
                                     <?php 
-                                    if ($book['fine_amount'] > 0) {
+                                    if ($book['fine_amount'] > 0 && $book['user_role'] !== 'faculty') {
                                         $fineClass = $book['fine_status'] == 'pending' ? 'text-danger' : 'text-success';
                                         echo '<span class="' . $fineClass . '">PKR ' . number_format($book['fine_amount'], 2) . '</span><br>';
                                         echo '<small class="text-muted">(' . ucfirst($book['fine_status']) . ')</small>';
+                                    } elseif ($book['user_role'] === 'faculty') {
+                                        echo '<span class="text-muted">Faculty Exempt</span>';
                                     } else {
                                         echo '<span class="text-muted">No fine</span>';
                                     }

@@ -13,13 +13,14 @@ $messageType = '';
 
 // Get all fines for the user
 $sql = "
-    SELECT f.*, b.book_name, b.author, ib.return_date, ib.actual_return_date, ib.issue_date,
+    SELECT f.*, b.book_name, b.author, ib.return_date, ib.actual_return_date, ib.issue_date, u.role as user_role,
            p.payment_date, p.payment_method, p.receipt_number, p.transaction_id
     FROM fines f
     JOIN issued_books ib ON f.issued_book_id = ib.id
     JOIN books b ON ib.book_id = b.id
+    JOIN users u ON f.user_id = u.id
     LEFT JOIN payments p ON f.id = p.fine_id
-    WHERE f.user_id = ?
+    WHERE f.user_id = ? AND u.role != 'faculty'
     ORDER BY f.created_at DESC
 ";
 $stmt = $conn->prepare($sql);

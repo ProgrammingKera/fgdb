@@ -64,17 +64,17 @@ function generateDueDate($days = 14) {
 }
 
 // Calculate fine amount based on days overdue
-function calculateFine($dueDate, $returnDate, $finePerDay = 1.00) {
-    $due = new DateTime($dueDate);
-    $return = new DateTime($returnDate);
-    $diff = $return->diff($due);
+// function calculateFine($dueDate, $returnDate, $finePerDay = 1.00) {
+//     $due = new DateTime($dueDate);
+//     $return = new DateTime($returnDate);
+//     $diff = $return->diff($due);
     
-    if ($return > $due) {
-        return $diff->days * $finePerDay;
-    }
+//     if ($return > $due) {
+//         return $diff->days * $finePerDay;
+//     }
     
-    return 0;
-}
+//     return 0;
+// }
 
 // Upload file and return path
 function uploadFile($file, $targetDir = '../uploads/ebooks/') {

@@ -49,7 +49,12 @@ if ($result) {
 
 // Get pending fines
 $pendingFines = 0;
-$sql = "SELECT SUM(amount) as total FROM fines WHERE user_id = ? AND status = 'pending'";
+$sql = "
+    SELECT SUM(f.amount) as total 
+    FROM fines f 
+    JOIN users u ON f.user_id = u.id 
+    WHERE f.user_id = ? AND f.status = 'pending' AND u.role != 'faculty'
+";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $userId);
 $stmt->execute();

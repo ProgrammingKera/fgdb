@@ -295,6 +295,25 @@ function getUserIpAddress() {
     }
 }
 
+// Calculate fine amount based on days overdue
+function calculateFine($dueDate, $returnDate, $finePerDay = 100.00, $userRole = 'student') {
+    // Faculty members are exempt from fines
+    if ($userRole === 'faculty') {
+        return 0;
+    }
+    
+    $due = new DateTime($dueDate);
+    $return = new DateTime($returnDate);
+    $diff = $return->diff($due);
+    
+    if ($return > $due) {
+        $daysOverdue = $diff->days;
+        return $daysOverdue * $finePerDay;
+    }
+    
+    return 0;
+}
+
 // Check if default librarian exists, if not create one
 $stmt = $conn->prepare("SELECT * FROM users WHERE email = 'admin@library.com' AND role = 'librarian'");
 $stmt->execute();
